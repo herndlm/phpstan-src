@@ -82,7 +82,7 @@ jobs:
           LD_PRELOAD: /usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
 
       - name: "Reset timestamps"
-        run: 'find . -type f -exec touch {} +'
+        run: 'find . -exec touch {} +'
         env:
           FAKETIME: 2017-10-11 08:58:00
           LD_PRELOAD: /usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
