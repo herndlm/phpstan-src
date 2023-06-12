@@ -16,3 +16,16 @@ if (null !== $var) {
 	assertType('list<string>', !is_array($var) ? [$var] : $var);
 	foo(!is_array($var) ? [$var] : $var);
 }
+
+/**
+ * @param non-empty-array<string> $var
+ */
+function bar($var): void {}
+
+/** @var string|non-empty-array<string>|null $var */
+if (null !== $var) {
+	assertType('non-empty-array<string>', (array) $var);
+	bar((array) $var); // should work the same as line below
+	assertType('non-empty-array<string>', !is_array($var) ? [$var] : $var);
+	bar(!is_array($var) ? [$var] : $var);
+}
