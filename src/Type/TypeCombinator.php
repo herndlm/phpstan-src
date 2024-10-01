@@ -146,6 +146,10 @@ class TypeCombinator
 			return new NeverType();
 		}
 
+		if ($typesCount === 1 && $types[0] instanceof UnionType && $types[0]->isNormalized()) {
+			return $types[0];
+		}
+
 		$benevolentTypes = [];
 		$benevolentUnionObject = null;
 		// transform A | (B | C) to A | B | C
@@ -363,7 +367,7 @@ class TypeCombinator
 					return $benevolentUnionObject->withTypes($types);
 				}
 
-				return new BenevolentUnionType($types);
+				return new BenevolentUnionType($types, true);
 			}
 		}
 

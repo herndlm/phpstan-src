@@ -2632,6 +2632,20 @@ class TypeCombinatorTest extends PHPStanTestCase
 			IntersectionType::class,
 			'array&hasOffsetValue(\'thing\', mixed)',
 		];
+		yield [
+			[
+				new UnionType([new IntegerType(), new StringType()], true),
+			],
+			UnionType::class,
+			'int|string',
+		];
+		yield [
+			[
+				new BenevolentUnionType([new IntegerType(), new StringType()], true),
+			],
+			BenevolentUnionType::class,
+			'(int|string)',
+		];
 	}
 
 	/**
