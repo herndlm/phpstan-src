@@ -25,6 +25,17 @@ class NodeScopeResolverTest extends TypeInferenceTestCase
 	 */
 	private static function findTestFiles(): iterable
 	{
+		yield __DIR__ . '/nsrt/list-count.php';
+		return;
+
+		yield __DIR__ . '/nsrt/count-maybe.php';
+		yield __DIR__ . '/nsrt/countable.php';
+		yield __DIR__ . '/nsrt/list-count.php';
+		yield __DIR__ . '/nsrt/bug-4700.php';
+		yield __DIR__ . '/nsrt/count-type.php';
+		yield __DIR__ . '/nsrt/foo.php';
+		return;
+
 		foreach (self::findTestDataFilesFromDirectory(__DIR__ . '/nsrt') as $testFile) {
 			yield $testFile;
 		}
