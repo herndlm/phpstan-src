@@ -1016,6 +1016,97 @@ class ConstantArrayType implements Type
 		return $builder->getArray();
 	}
 
+	public function spliceArray(Type $offsetType, Type $lengthType, Type $replacementType): Type
+	{
+		$allArrays = $this->getAllArrays();
+		if (count($allArrays) > InitializerExprTypeResolver::CALCULATE_SCALARS_LIMIT) {
+			return $this->degradeToGeneralArray()
+				->spliceArray($offsetType, $lengthType, $replacementType);
+		}
+
+		$types = [];
+		foreach ($this->getAllArrays() as $array) {
+			$types[] = $array->spliceArrayWithoutOptionalKeys($offsetType, $lengthType, $replacementType);
+		}
+
+		return TypeCombinator::union(...$types);
+	}
+
+	private function spliceArrayWithoutOptionalKeys(Type $offsetType, Type $lengthType, Type $replacementType): Type
+	{
+		$keyTypesCount = count($this->keyTypes);
+
+		$offset = $offsetType instanceof ConstantIntegerType ? $offsetType->getValue() : null;
+
+		if ($lengthType instanceof ConstantIntegerType) {
+			$length = $lengthType->getValue();
+		} elseif ($lengthType->isNull()->yes()) {
+			$length = $keyTypesCount;
+		} else {
+			$length = null;
+		}
+
+		if ($offset === null || $length === null) {
+			return $this->degradeToGeneralArray()
+				->spliceArray($offsetType, $lengthType, $replacementType);
+		}
+
+		if ($keyTypesCount + $offset <= 0) {
+			// A negative offset cannot reach left outside the array twice
+			$offset = 0;
+		}
+
+		if ($keyTypesCount + $length <= 0) {
+			// A negative length cannot reach left outside the array twice
+			$length = 0;
+		}
+
+		if ($offset < 0) {
+			$offset = $keyTypesCount + $offset;
+		}
+
+		if ($length < 0) {
+			$length = $keyTypesCount - $offset + $length;
+		}
+
+		$removeKeysCount = 0;
+		$builder = ConstantArrayTypeBuilder::createEmpty();
+		for ($i = 0;; $i++) {
+			if ($i === $offset) {
+				// When the offset is reached we have to a) put the replacement array in and b) remove $length elements
+				$removeKeysCount = $length;
+
+				$replacementArrayType = $replacementType->toArray();
+				$constantArrays = $replacementArrayType->getConstantArrays();
+				if (count($constantArrays) === 1) {
+					$valuesArray = $constantArrays[0]->getValuesArray();
+					for ($j = 0, $jMax = count($valuesArray->keyTypes); $j < $jMax; $j++) {
+						$builder->setOffsetValueType(null, $valuesArray->valueTypes[$j], $valuesArray->isOptionalKey($j));
+					}
+				} else {
+					$builder->degradeToGeneralArray();
+					$builder->setOffsetValueType($replacementArrayType->getValuesArray()->getIterableKeyType(), $replacementArrayType->getIterableValueType(), true);
+				}
+			}
+
+			if (!isset($this->keyTypes[$i])) {
+				break;
+			}
+
+			if ($removeKeysCount > 0) {
+				$removeKeysCount--;
+				continue;
+			}
+
+			$builder->setOffsetValueType(
+				$this->keyTypes[$i]->isInteger()->no() ? $this->keyTypes[$i] : null,
+				$this->valueTypes[$i],
+			);
+		}
+
+		return $builder->getArray();
+	}
+
 	public function isIterableAtLeastOnce(): TrinaryLogic
 	{
 		$keysCount = count($this->keyTypes);
